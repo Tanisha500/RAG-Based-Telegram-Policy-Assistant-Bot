@@ -39,5 +39,9 @@ Policy and FAQ content was taken from a sample PDF
 - **Context Matching**: JavaScript-based filtering in n8n
 - **No-code Tools**: n8n, Telegram Bot, Groq API
 
-## Workflow 
+## Workflow Screenshot
+<img width="1819" height="554" alt="image" src="https://github.com/user-attachments/assets/bed42043-cc2b-41f0-b667-c596557c12c9" />
+
+## Telegram Chat Screenshot
+<img width="1252" height="442" alt="image" src="https://github.com/user-attachments/assets/562594b3-0b25-4e87-9b68-d3db52dbe61a" />
 
