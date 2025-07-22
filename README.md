@@ -1,4 +1,4 @@
-# RAG-Based-Telegram-Policy-Assistant-Bott
+# RAG-Based-Telegram-Policy-Assistant-Bot
 
 This project is a **Retrieval-Augmented Generation (RAG)** based assistant that answers user queries on **Policy & FAQs** — built entirely using **no-code tools** like n8n, Groq API, and **Telegram Bot API**.
 
