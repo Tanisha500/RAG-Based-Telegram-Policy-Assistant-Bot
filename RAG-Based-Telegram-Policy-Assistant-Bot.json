@@ -1,0 +1,155 @@
+{
+  "name": "RAG-Based-Telegram-Policy-Assistant-Bot",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/getUpdates",
+        "responseFormat": "json"
+      },
+      "id": "2",
+      "name": "Check Telegram Updates via HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const messages = items[0].json.result;\nif (!messages || messages.length === 0) {\n  return [];\n}\nconst latestMessage = messages[messages.length - 1];\nreturn [{\n  json: {\n    chat_id: latestMessage.message.chat.id,\n    text: latestMessage.message.text\n  }\n}];"
+      },
+      "id": "3",
+      "name": "Code1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const query = items[0].json.text;\n// Placeholder: Replace with your vector DB search logic\n// Simulate retrieval of 3 context chunks\nreturn [{ json: { query, context: [\n  \"Policy section A: ...\",\n  \"Policy section B: ...\",\n  \"Policy section C: ...\"\n].join('\\n') } }];"
+      },
+      "id": "4",
+      "name": "Context Search",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1000, 200]
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{ json: { text: items[0].json.text } }];"
+      },
+      "id": "5",
+      "name": "Extract Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1000, 400]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByIndex"
+      },
+      "id": "6",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const { query, context } = items[0].json;\nconst prompt = `You are a policy assistant bot. Use the following context to answer the question.\\n\\nContext:\\n${context}\\n\\nQuestion: ${query}\\n\\nAnswer:`;\nreturn [{ json: { prompt, chat_id: items[0].json.chat_id } }];"
+      },
+      "id": "7",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1500, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "method": "POST",
+        "sendBody": true,
+        "jsonParameters": true,
+        "options": {},
+        "body": {
+          "model": "llama3-8b-8192",
+          "messages": [
+            { "role": "system", "content": "You are a helpful policy assistant." },
+            { "role": "user", "content": "={{$json[\"prompt\"]}}" }
+          ]
+        },
+        "authentication": "headerAuth",
+        "headerAuth": {
+          "name": "Authorization",
+          "value": "Bearer YOUR_GROQ_API_KEY"
+        },
+        "responseFormat": "json"
+      },
+      "id": "8",
+      "name": "Groq API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1750, 200]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByIndex"
+      },
+      "id": "9",
+      "name": "Merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/sendMessage",
+        "method": "POST",
+        "sendBody": true,
+        "options": {},
+        "body": {
+          "chat_id": "={{$json[\"chat_id\"]}}",
+          "text": "={{$json[\"choices\"][0][\"message\"][\"content\"]}}"
+        }
+      },
+      "id": "10",
+      "name": "Send Answer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [2250, 300]
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": { "main": [[ { "node": "Check Telegram Updates via HTTP Request", "type": "main", "index": 0 } ]] },
+    "Check Telegram Updates via HTTP Request": { "main": [[ { "node": "Code1", "type": "main", "index": 0 } ]] },
+    "Code1": {
+      "main": [
+        [
+          { "node": "Context Search", "type": "main", "index": 0 },
+          { "node": "Extract Message", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Context Search": { "main": [[ { "node": "Merge", "type": "main", "index": 0 } ]] },
+    "Extract Message": { "main": [[ { "node": "Merge", "type": "main", "index": 1 } ]] },
+    "Merge": { "main": [[ { "node": "Code", "type": "main", "index": 0 } ]] },
+    "Code": {
+      "main": [
+        [
+          { "node": "Groq API", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Groq API": { "main": [[ { "node": "Merge1", "type": "main", "index": 0 } ]] },
+    "Code1": { "main": [[ { "node": "Merge1", "type": "main", "index": 1 } ]] },
+    "Merge1": { "main": [[ { "node": "Send Answer", "type": "main", "index": 0 } ]] }
+  }
+}
